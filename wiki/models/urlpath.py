@@ -8,6 +8,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.db import models, transaction
+from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
 # Django 1.6 transaction API, required for 1.8+
 from django.utils.encoding import python_2_unicode_compatible
@@ -167,11 +168,13 @@ class URLPath(MPTTModel):
             log.exception("Exception deleting article subtree.")
 
     @classmethod
-    def root(cls):
+    def root(cls, organization=None):
         site = Site.objects.get_current()
-        root_nodes = list(
-            cls.objects.root_nodes().filter(site=site).select_related_common()
-        )
+        query = Q(site=site)
+        if organization:
+            query &= Q(article__organization=organization)
+        qs = cls.objects.root_nodes().filter(query).select_related_common()
+        root_nodes = list(qs)
         # We fetch the nodes as a list and use len(), not count() because we need
         # to get the result out anyway. This only takes one sql query
         no_paths = len(root_nodes)
@@ -219,7 +222,7 @@ class URLPath(MPTTModel):
         super(URLPath, self).clean(*args, **kwargs)
 
     @classmethod
-    def get_by_path(cls, path, select_related=False):
+    def get_by_path(cls, path, organization, select_related=False):
         """
         Strategy: Don't handle all kinds of weird cases. Be strict.
         Accepts paths both starting with and without '/'
@@ -234,11 +237,11 @@ class URLPath(MPTTModel):
 
         # Root page requested
         if not path:
-            return cls.root()
+            return cls.root(organization)
 
         slugs = path.split('/')
         level = 1
-        parent = cls.root()
+        parent = cls.root(organization)
         for slug in slugs:
             if settings.URL_CASE_SENSITIVE:
                 child = parent.get_children().select_related_common().get(
@@ -262,12 +265,16 @@ class URLPath(MPTTModel):
         if not site:
             site = Site.objects.get_current()
         root_nodes = cls.objects.root_nodes().filter(site=site)
+        if request:
+            root_nodes = root_nodes.filter(
+                article__organization=request.organization)
         if not root_nodes:
             # (get_or_create does not work for MPTT models??)
             article = Article()
             revision = ArticleRevision(title=title, **kwargs)
             if request:
                 revision.set_from_request(request)
+                article.organization = request.organization
             article.add_revision(revision, save=True)
             article.save()
             root = cls.objects.create(site=site, article=article)

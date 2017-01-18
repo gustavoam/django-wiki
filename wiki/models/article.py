@@ -77,6 +77,10 @@ class Article(models.Model):
         default=True,
         verbose_name=_('others write access'))
 
+    organization = models.ForeignKey(
+        'grinch.Organization', related_name='articles',
+        null=True, blank=True)
+
     # PERMISSIONS
     def can_read(self, user):
         return permissions.can_read(self, user)

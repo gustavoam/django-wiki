@@ -84,13 +84,20 @@ def get_article(func=None, can_read=True, can_write=False,  # noqa
 
         path = kwargs.pop('path', None)
         article_id = kwargs.pop('article_id', None)
+        org = request.organization
 
         urlpath = None
 
         # fetch by urlpath.path
         if path is not None:
             try:
-                urlpath = models.URLPath.get_by_path(path, select_related=True)
+                urlpath = models.URLPath.get_by_path(
+                    path, org, select_related=True)
+                if urlpath.article.organization != org:
+                    if urlpath.is_root_node():
+                        raise NoRootURL
+                    else:
+                        raise models.URLPath.DoesNotExist
             except NoRootURL:
                 return redirect('wiki:root_create')
             except models.URLPath.DoesNotExist:
@@ -101,7 +108,7 @@ def get_article(func=None, can_read=True, can_write=False,  # noqa
                             path.split("/"),
                         ))
                     path = "/".join(pathlist[:-1])
-                    parent = models.URLPath.get_by_path(path)
+                    parent = models.URLPath.get_by_path(path, org)
                     return HttpResponseRedirect(
                         reverse(
                             "wiki:create", kwargs={'path': parent.path, }) +
@@ -152,6 +159,9 @@ def get_article(func=None, can_read=True, can_write=False,  # noqa
             else:
                 if article.current_revision and article.current_revision.deleted:
                     return redirect('wiki:deleted', article_id=article.id)
+
+        if article.organization != org:
+            return response_forbidden(request, article, urlpath)
 
         if article.current_revision.locked and not_locked:
             return response_forbidden(request, article, urlpath)

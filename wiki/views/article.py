@@ -82,9 +82,11 @@ class Create(FormView, ArticleMixin):
 
     def form_valid(self, form):
         user = None
+        organization = None
         ip_address = None
         if not self.request.user.is_anonymous():
             user = self.request.user
+            organization = self.request.organization
             if settings.LOG_IPS_USERS:
                 ip_address = self.request.META.get('REMOTE_ADDR', None)
         elif settings.LOG_IPS_ANONYMOUS:
@@ -105,6 +107,7 @@ class Create(FormView, ArticleMixin):
                                 'group_write': self.article.group_write,
                                 'other_read': self.article.other_read,
                                 'other_write': self.article.other_write,
+                                'organization': organization,
                                 })
             messages.success(
                 self.request,
@@ -883,22 +886,26 @@ class CreateRootView(FormView):
     template_name = 'wiki/create_root.html'
 
     def dispatch(self, request, *args, **kwargs):
-
         if not request.user.is_superuser:
             return redirect("wiki:root_missing")
 
+        org = request.organization
         try:
-            root = models.URLPath.root()
+            root = models.URLPath.root(org)
+            if request.method == "GET" and root.article.organization != org:
+                raise NoRootURL
         except NoRootURL:
             pass
         else:
             if root.article:
-                return redirect('wiki:get', path=root.path)
-
-            # TODO: This is too dangerous... let's say there is no root.article and we end up here,
-            # then it might cascade to delete a lot of things on an existing
-            # installation.... / benjaoming
-            root.delete()
+                if root.article.organization == org:
+                    return redirect('wiki:get', path=root.path)
+            else:
+                # TODO: This is too dangerous...
+                # let's say there is no root.article and we end up here,
+                # then it might cascade to delete a lot of things
+                # on an existing installation.... / benjaoming
+                root.delete()
         return super(CreateRootView, self).dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
