@@ -351,19 +351,21 @@ def on_article_delete(instance, *args, **kwargs):
     ns = Namespace()   # nonlocal namespace backported to Python 2.x
     ns.lost_and_found = None
 
-    def get_lost_and_found():
+    def get_lost_and_found(org=None):
         if ns.lost_and_found:
             return ns.lost_and_found
         try:
+            parent = URLPath.root(org) if org else URLPath.root()
             ns.lost_and_found = URLPath.objects.get(
                 slug=settings.LOST_AND_FOUND_SLUG,
-                parent=URLPath.root(),
+                parent=parent,
                 site=site)
         except URLPath.DoesNotExist:
             article = Article(group_read=True,
                               group_write=False,
                               other_read=False,
-                              other_write=False)
+                              other_write=False,
+                              organization=org)
             article.add_revision(
                 ArticleRevision(
                     content=_(
@@ -371,9 +373,10 @@ def on_article_delete(instance, *args, **kwargs):
                         '===============================\n\n'
                         'The children of this article have had their parents deleted. You should probably find a new home for them.'),
                     title=_("Lost and found")))
+            parent = URLPath.root(org) if org else URLPath.root()
             ns.lost_and_found = URLPath.objects.create(
                 slug=settings.LOST_AND_FOUND_SLUG,
-                parent=URLPath.root(),
+                parent=parent,
                 site=site,
                 article=article)
             article.add_object_relation(ns.lost_and_found)
@@ -384,7 +387,7 @@ def on_article_delete(instance, *args, **kwargs):
             site=site):
         # Delete the children
         for child in urlpath.get_children():
-            child.move_to(get_lost_and_found())
+            child.move_to(get_lost_and_found(instance.organization))
         # ...and finally delete the path itself
 
 pre_delete.connect(on_article_delete, Article)
