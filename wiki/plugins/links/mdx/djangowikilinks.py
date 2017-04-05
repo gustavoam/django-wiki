@@ -93,6 +93,11 @@ class WikiPath(markdown.inlinepatterns.Pattern):
                 path = urlpath.get_absolute_url()
             except models.URLPath.DoesNotExist:
                 pass
+            except TypeError:
+                # since we can't get request organization here,
+                # TypeError will be raised here
+                # it doesn't affect functionality
+                pass
         else:
             urlpath = models.URLPath.objects.get(article=self.markdown.article)
             source_components = urlpath.path.strip("/").split("/")
