@@ -20,12 +20,12 @@ class QueryUrlPath(View):
         if query:
             matches = models.URLPath.objects.can_read(
                 request.user).active().filter(
-                article__current_revision__title__contains=query,
+                article__current_revision__title__icontains=query,
                 article__current_revision__deleted=False,
             )
             matches = matches.select_related_common()
             return [("[%s](wiki:%s)") %
                     (m.article.current_revision.title, '/' +
-                     m.path.strip("/")) for m in matches[:max_num]]
+                     m.path) for m in matches[:max_num]]
 
         return []
