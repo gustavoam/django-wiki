@@ -20,8 +20,6 @@ except ImportError:
         return(x)
 
 
-
-
 class MarkItUpAdminWidget(forms.Widget):
 
     """A simplified more fail-safe widget for the backend"""
@@ -34,10 +32,10 @@ class MarkItUpAdminWidget(forms.Widget):
             default_attrs.update(attrs)
         super(MarkItUpAdminWidget, self).__init__(default_attrs)
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         if value is None:
             value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
         return mark_safe(
             '<textarea%s>%s</textarea>' %
             (flatatt(final_attrs),
@@ -45,7 +43,7 @@ class MarkItUpAdminWidget(forms.Widget):
                 force_unicode(value))))
 
 
-class MarkItUpWidget(forms.Widget):
+class MarkItUpWidget(forms.Textarea):
 
     def __init__(self, attrs=None):
         # The 'rows' and 'cols' attributes are required for HTML correctness.
@@ -54,16 +52,6 @@ class MarkItUpWidget(forms.Widget):
         if attrs:
             default_attrs.update(attrs)
         super(MarkItUpWidget, self).__init__(default_attrs)
-
-    def render(self, name, value, attrs=None):
-        if value is None:
-            value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
-        return mark_safe(
-            '<div><textarea%s>%s</textarea></div>' %
-            (flatatt(final_attrs),
-             conditional_escape(
-                force_unicode(value))))
 
 
 class MarkItUp(BaseEditor):

@@ -264,7 +264,7 @@ class SelectWidgetBootstrap(forms.Select):
     def render(self, name, value, attrs=None, choices=()):
         if value is None:
             value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
         output = [
             """<div%(attrs)s>"""
             """    <button class="btn btn-group-label%(disabled)s" type="button">%(label)s</button>"""
