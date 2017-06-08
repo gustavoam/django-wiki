@@ -86,6 +86,8 @@ def get_article(func=None, can_read=True, can_write=False,  # noqa
         article_id = kwargs.pop('article_id', None)
         org = request.organization
 
+        if org is None:
+            return redirect('wiki:no_organization')
         urlpath = None
 
         # fetch by urlpath.path

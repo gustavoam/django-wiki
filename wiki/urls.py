@@ -2,6 +2,8 @@
 from __future__ import absolute_import, unicode_literals
 
 from django.conf.urls import include, url
+from django.views.generic import TemplateView
+
 from wiki.conf import settings
 from wiki.core.plugins import registry
 from wiki.core.plugins.loader import load_wiki_plugins
@@ -77,6 +79,10 @@ class WikiURLPatterns(object):
             url(r'^_revision/diff/(?P<revision_id>\d+)/$',
                 self.article_diff_view,
                 name='diff'),
+            url(r'^no-organization/$',
+                TemplateView.as_view(
+                    template_name='wiki/no_organization.html'),
+                name='no_organization'),
         ]
         return urlpatterns
 
