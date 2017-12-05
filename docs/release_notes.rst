@@ -5,9 +5,108 @@ Release notes
 Release plan
 ------------
 
-Currently, the only series in development is the 0.2 series, and all bug fixes
-and new features are referred to this series, keeping in mind that they don't
-introduce any backwards incompatible changes.
+The next release series **0.3** will support Django 1.11. Likewise, it will be
+the last series with Python 2 support.
+
+
+django-wiki 0.3dev (unreleased master)
+--------------------------------------
+
+**Changed**
+
+ * Removed exception catch all in ``URLPath.delete_subtree`` which silenced errors while delete articles with descendents
+
+
+
+django-wiki 0.3b3
+-----------------
+
+.. note:: Series 0.3 is in development in the current master branch and the
+  latest pre-release is available with ``pip install wiki --pre``.
+
+**Translation updates from Transifex**
+
+ * Languages that `need support <https://www.transifex.com/django-wiki/django-wiki/languages/>`__:
+ 
+   * Slovak 88%
+   * Dutch 86%
+   * Finnish 85%
+   * Japanese 70%
+   * Chinese (Taiwan) 36%
+   * Norwegian 31%
+   * Turkish 30%
+   * Czech 13%
+   
+ * >90% completed: Chinese, French, German, Russian, Spanish, Danish, Korean, Polish, Portuguese (Brazilian), Spanish
+
+**New features**
+
+ * New bootstrapped image insert dialog (Frank Loemker) #628
+ * Allow the HTML tag ``<hr>`` (Frank Loemker) #629
+ * Global History overview of page revisions (Frank Loemker and Maximilien Cuony) #627
+ * Move article support with redirects (Frank Loemker) #640
+ * Django 1.11 compatibility (Luke Plant) #634
+ * Crop paginator window when there are >9 pages in a list (Frank Loemker) #646
+ * Extended syntax for attachment macro: ``[attachment:id title:"text" size]`` (Frank Loemker) #678
+ * Add Sphinx documentation for plugin settings (Frank Loemker) #681
+ * Show "log out" in menu when account handling is disabled (jenda1) #691
+
+**Bug fixes and smaller changes**
+
+ * Test refactor: Use django-functest and separate WebTest from Selenium (Luke Plant) #634
+ * Repo refactor: Moved ``wiki`` package to ``src/`` folder and test code to ``tests/`` #631
+ * Render django.contrib.messages with template tag and inclusion template: Configurable and bootstrap 3 compatible (Benjamin Bach and Frank Loemker) #654
+ * Don't hardcode redirect url in account update view (Benjamin Bach) #650
+ * Python 3.6 support added to test matrix (Benjamin Bach) #664
+ * Fix restoring of attachments and other RevisionPlugin types after deletion (Frank Loemker) #672
+ * Keep CSS global namespace clean, refactor CSS rule ``label`` -> ``.wiki-label label`` (Christian Duvholt) #679
+ * Fix article settings page in Django 1.11 (Frank Loemker) #682
+ * Fix upstream MPTT breaking deletion of articles from django-admin (Frank Loemker) #683
+ * Wrong HTML attribute 'type' on search result page (Geoff Clapp) #698
+ * Plugins can whitelist HTML tags and attributes (jenda1) #700
+
+
+django-wiki 0.2.4
+-----------------
+
+ * Hot-fix because of missing woff2 files #625
+
+
+django-wiki 0.2.3
+-----------------
+
+ * Pulled Transifex translations and pushed source translations.
+ * Fix support for Py2 unicode in code blocks (Benjamin Bach) #607
+ * Support for Github style fenced codeblocks (Benjamin Bach) #618
+ * Cached articles showing up in wrong language (Benjamin Bach) #592
+ * Upgraded Bootstrap from 3.3.1 to 3.3.7 (Benjamin Bach) #620
+ * Upgraded bundled jQuery to 1.12.4 (Benjamin Bach) #620
+ * Setting ``WIKI_MARKDOWN_HTML_STYLES`` for allowing ``style='..'`` in user code (Benjamin Bach) #603
+ * Strip Markdown code in search result snippets (Benjamin Bach) #42
+
+
+django-wiki 0.2.2
+-----------------
+
+ * Remove ``wiki.decorators.json_view``, fixes server errors when resolving 404 links #604
+ * Replace usage of ``render_to_response()`` with ``render()`` #606
+ * Fix memory leak #609 and #611 (obtroston)
+ * Scroll bars and display area fixed for code blocks #601 and #608 (Branko Majic)
+ * Option ``WIKI_MARKDOWN_SANITIZE_HTML`` skips Bleach (warning: Don't use for untrusted code) #610 (Michal Hozza)
+ * Allow the HTML tag ``<br>``. #613 (Frank Loemker)
+ * Add thumbnail size directive (example: ``[image:123 size:large]``). #612 (Frank Loemker and @inflrscns)
+ * Fix error with absolute paths in wiki links (example: ``[Sub-root](wiki:/sub-root)``) #616 (Benoit C. Sirois)
+ * Require ``Django<1.11`` #616 (Benoit C. Sirois)
+
+
+django-wiki 0.2.1
+-----------------
+
+ * Lowercase slugs when creating new pages with ``[[Like This]]`` #595 (Eric Clack)
+ * Fix issues related to Bleach before Markdown processing esp. pertaining ``>`` characters. #596
+ * Remove ``wiki.plugins.mediawikiimport`` #597
+ * Pretty up the highligted code's line enumeration #598
+ * Customize codehilite in order to wrap highlighted code with scrollbars #598
 
 
 django-wiki 0.2
@@ -116,7 +215,7 @@ django-wiki 0.1
 
 
 Breaking changes
-________________
+~~~~~~~~~~~~~~~~
 
 **wiki.VERSION as tuple**
 
@@ -154,7 +253,7 @@ the final release.
 
 
 Upgrading
-_________
+~~~~~~~~~
 
 Firstly, upgrade django-wiki through familiar steps with pip
 
@@ -209,7 +308,7 @@ receive notifications using the following management command:
 
 
 Troubleshooting
-_______________
+~~~~~~~~~~~~~~~
 
 
 If you have been running from the git master branch, you may experience
@@ -235,4 +334,88 @@ your DB shell (after backing up this data).
 After this, you can recreate your notifications with the former section's
 instructions.
 
+
+
+News archive
+------------
+
+April 15, 2017
+~~~~~~~~~~~~~~
+
+0.2.3 released: `Release notes <http://django-wiki.readthedocs.io/en/master/release_notes.html#django-wiki-0-2-3>`_
+
+0.2.2 released: `Release notes <http://django-wiki.readthedocs.io/en/master/release_notes.html#django-wiki-0-2-2>`_
+
+
+February 27, 2017
+~~~~~~~~~~~~~~~~~
+
+0.2.1 released: `Release notes <http://django-wiki.readthedocs.io/en/master/release_notes.html#django-wiki-0-2-1>`_
+
+
+December 27, 2016
+~~~~~~~~~~~~~~~~~
+
+0.2 final released: `Release notes <http://django-wiki.readthedocs.io/en/0.2/release_notes.html>`_
+
+
+June 19, 2016
+~~~~~~~~~~~~~
+
+0.1.2 released: `Release notes <http://django-wiki.readthedocs.io/en/latest/release_notes.html#django-wiki-0-1-2>`__
+
+May 6, 2016
+~~~~~~~~~~~
+
+0.1.1 released: `Release notes <http://django-wiki.readthedocs.io/en/latest/release_notes.html#django-wiki-0-1-1>`__
+
+
+January 25, 2016
+~~~~~~~~~~~~~~~~
+
+0.1 final released
+
+
+December 26th, 2015
+~~~~~~~~~~~~~~~~~~~
+
+A new release 0.0.24.4 is out and has fixes for the Django ``loaddata`` management command such that you can create dumps and restore the dump. Notice, though, that ``loaddata`` only works for Django 1.7+.
+
+Django 1.9 support is available in the current master, please help get a 0.1 released by giving feed back in the last remaining issues:
+
+https://github.com/django-wiki/django-wiki/milestones/0.1
+
+
+November 16th, 2015
+~~~~~~~~~~~~~~~~~~~
+
+Django 1.8 support is very ready and 0.1 is right on the doorstep now.
+
+
+January 26th, 2015
+~~~~~~~~~~~~~~~~~~
+
+After too long, the new release is out.
+
+The wait was mainly due to all the confusing changes by adding support
+of Python 3 and readying the migrations for Django 1.7. But there's
+actually new features, too.
+
+-  Bootstrap 3.3.1 and Font Awesome 4 (Christian Duvholt)
+-  ``django_nyt`` instead of builtin ``django_notify`` (Benjamin Bach,
+   Maximilien Cuony)
+-  ``tox`` for testing (Luke Plant)
+-  Appropriate use of gettext\_lazy (Jaakko Luttinen)
+-  Fixed support of custom username fields (Jan De Bleser)
+-  Several fixes to the attachment plugin (Christian Duvholt)
+-  Errors on notifications settings tab (Benjamin Richter)
+-  Chinese translations (Ronald Bai)
+-  Finish translations (Jaakko Luttinen)
+-  Compatibility with custom user model in article settings (Andy Fang)
+-  Fixed bug when ``[attachment:XX]`` present multiple times on same
+   line (Maximilien Cuony)
+-  Simple mediawiki import management command (Maximilien Cuony)
+-  Python 3 and Django 1.6 compatibility (Russell-Jones, Antonin
+   Lenfant, Luke Plant, Lubimov Igor, Benjamin Bach)
+-  (and more, forgiveness asked if anyone feels left out)
 

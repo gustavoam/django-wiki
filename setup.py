@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, print_function
 
 import os
 import sys
+from glob import glob
+
 from setuptools import find_packages, setup
 
-from wiki import __version__
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), 'src')
+)
+
+# noqa
+from wiki import __version__  # isort:skip  # noqa
 
 
 # Utility function to read the README file.
@@ -27,7 +34,7 @@ def read_file(fname):
 
 
 requirements = [
-    "Django>=1.8",
+    "Django>=1.8,<2.0",
     "bleach>=1.5,<2",
     "Pillow",
     "django-nyt>=1.0b1",
@@ -37,8 +44,6 @@ requirements = [
     "sorl-thumbnail>=12,<13",
     "Markdown>=2.6,<2.7",
 ]
-
-packages = find_packages()
 
 
 setup(
@@ -50,22 +55,26 @@ setup(
     description="A wiki system written for the Django framework.",
     license="GPLv3",
     keywords=["django", "wiki", "markdown"],
-    packages=find_packages(exclude=["testproject", "testproject.*"]),
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    py_modules=[os.path.splitext(os.path.basename(path))[0] for path in glob('src/*.py')],
     long_description=read_file('README.rst'),
     zip_safe=False,
     install_requires=requirements,
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development',
         'Topic :: Software Development :: Libraries :: Application Frameworks',
