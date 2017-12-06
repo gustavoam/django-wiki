@@ -326,7 +326,7 @@ class URLPath(MPTTModel):
         user = None
         organization = None
         ip_address = None
-        if not request.user.is_anonymous():
+        if not request.user.is_anonymous:
             user = request.user
             organization = self.request.organization
             if settings.LOG_IPS_USERS:

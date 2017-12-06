@@ -119,7 +119,7 @@ class SpamProtectionMixin():
         request = self.request
         user = None
         ip_address = None
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             user = request.user
         else:
             ip_address = request.META.get('REMOTE_ADDR', None)
@@ -153,7 +153,7 @@ class SpamProtectionMixin():
             return
 
         from_time = timezone.now() - timedelta(minutes=settings.REVISIONS_MINUTES_LOOKBACK)
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             per_minute = settings.REVISIONS_PER_MINUTES
         else:
             per_minute = settings.REVISIONS_PER_MINUTES_ANONYMOUS
@@ -166,7 +166,7 @@ class SpamProtectionMixin():
         )
 
         from_time = timezone.now() - timedelta(minutes=60)
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             per_hour = settings.REVISIONS_PER_MINUTES
         else:
             per_hour = settings.REVISIONS_PER_MINUTES_ANONYMOUS
