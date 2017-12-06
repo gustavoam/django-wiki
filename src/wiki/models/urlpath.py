@@ -8,7 +8,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models, transaction
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
@@ -67,13 +67,14 @@ class URLPath(MPTTModel):
 
     slug = models.SlugField(verbose_name=_('slug'), null=True, blank=True,
                             max_length=SLUG_MAX_LENGTH)
-    site = models.ForeignKey(Site)
+    site = models.ForeignKey(Site, on_delete=models.CASCADE)
     parent = TreeForeignKey(
         'self',
         null=True,
         blank=True,
         related_name='children',
-        help_text=_("Position of URL path in the tree.")
+        help_text=_("Position of URL path in the tree."),
+        on_delete=models.CASCADE,
     )
     moved_to = TreeForeignKey(
         'self',

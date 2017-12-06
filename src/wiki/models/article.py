@@ -4,7 +4,7 @@ from __future__ import absolute_import, unicode_literals
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 from django.db.models.fields import GenericIPAddressField as IPAddressField
 from django.db.models.signals import post_save, pre_delete, pre_save
@@ -29,7 +29,9 @@ class Article(models.Model):
         'ArticleRevision', verbose_name=_('current revision'),
         blank=True, null=True, related_name='current_set',
         help_text=_(
-            'The revision being displayed for this article. If you need to do a roll-back, simply change the value of this field.'),)
+            'The revision being displayed for this article. If you need to do a roll-back, simply change the value of this field.'),
+        on_delete=models.CASCADE,
+    )
 
     created = models.DateTimeField(
         auto_now_add=True,
@@ -69,7 +71,9 @@ class Article(models.Model):
 
     organization = models.ForeignKey(
         'grinch.Organization', related_name='articles',
-        null=True, blank=True)
+        null=True, blank=True,
+        on_delete=models.CASCADE,
+    )
 
     # PERMISSIONS
     def can_read(self, user):
@@ -241,7 +245,9 @@ class ArticleForObject(models.Model):
     content_type = models.ForeignKey(
         ContentType,
         verbose_name=_('content type'),
-        related_name="content_type_set_for_%(class)s")
+        related_name="content_type_set_for_%(class)s",
+        on_delete=models.CASCADE,
+    )
     object_id = models.PositiveIntegerField(_('object ID'))
     content_object = GenericForeignKey("content_type", "object_id")
 

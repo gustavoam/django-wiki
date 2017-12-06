@@ -165,6 +165,7 @@ class RevisionPlugin(ArticlePlugin):
         help_text=_(
             'The revision being displayed for this plugin. '
             'If you need to do a roll-back, simply change the value of this field.'),
+        on_delete=models.CASCADE,
     )
 
     def add_revision(self, new_revision, save=True):
@@ -202,7 +203,11 @@ class RevisionPluginRevision(BaseRevisionMixin, models.Model):
     (this class is very much copied from wiki.models.article.ArticleRevision
     """
 
-    plugin = models.ForeignKey(RevisionPlugin, related_name='revision_set')
+    plugin = models.ForeignKey(
+        RevisionPlugin,
+        related_name='revision_set',
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         # Override this setting with app_label = '' in your extended model
