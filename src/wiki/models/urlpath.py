@@ -328,7 +328,7 @@ class URLPath(MPTTModel):
         ip_address = None
         if not request.user.is_anonymous:
             user = request.user
-            organization = self.request.organization
+            organization = request.organization
             if settings.LOG_IPS_USERS:
                 ip_address = request.META.get('REMOTE_ADDR', None)
         elif settings.LOG_IPS_ANONYMOUS:
