@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, unicode_literals
-
 import logging
 import warnings
 
@@ -8,14 +5,11 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
-from django.urls import reverse
 from django.db import models, transaction
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
-# Django 1.6 transaction API, required for 1.8+
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import ugettext
+from django.urls import reverse
+from django.utils.translation import gettext, gettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 from wiki import managers
@@ -24,10 +18,14 @@ from wiki.core.exceptions import MultipleRootURLs, NoRootURL
 from wiki.decorators import disable_signal_for_loaddata
 from wiki.models.article import Article, ArticleForObject, ArticleRevision
 
+__all__ = [
+    'URLPath',
+]
+
+
 log = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class URLPath(MPTTModel):
 
     """
@@ -72,9 +70,19 @@ class URLPath(MPTTModel):
         'self',
         null=True,
         blank=True,
+        on_delete=models.CASCADE,
         related_name='children',
         help_text=_("Position of URL path in the tree."),
         on_delete=models.CASCADE,
+    )
+    moved_to = TreeForeignKey(
+        'self',
+        verbose_name=_("Moved to"),
+        help_text=_("Article path was moved to this location"),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='moved_from'
     )
     moved_to = TreeForeignKey(
         'self',
@@ -164,8 +172,7 @@ class URLPath(MPTTModel):
         query = Q(site=site)
         if organization:
             query &= Q(article__organization=organization)
-        qs = cls.objects.root_nodes().filter(query).select_related_common()
-        root_nodes = list(qs)
+        root_nodes = cls.objects.root_nodes().filter(query).select_related_common()
         # We fetch the nodes as a list and use len(), not count() because we need
         # to get the result out anyway. This only takes one sql query
         no_paths = len(root_nodes)
@@ -184,12 +191,12 @@ class URLPath(MPTTModel):
 
     def __str__(self):
         path = self.path
-        return path if path else ugettext("(root)")
+        return path if path else gettext("(root)")
 
     def delete(self, *args, **kwargs):
         assert not (self.parent and self.get_children()
                     ), "You cannot delete a root article with children."
-        super(URLPath, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
     class Meta:
         verbose_name = _('URL path')
@@ -210,7 +217,6 @@ class URLPath(MPTTModel):
                 raise ValidationError(
                     _('There is already a root node on %s') %
                     self.site)
-        super(URLPath, self).clean(*args, **kwargs)
 
     @classmethod
     def get_by_path(cls, path, organization, select_related=False):
@@ -260,7 +266,6 @@ class URLPath(MPTTModel):
             root_nodes = root_nodes.filter(
                 article__organization=request.organization)
         if not root_nodes:
-            # (get_or_create does not work for MPTT models??)
             article = Article()
             revision = ArticleRevision(title=title, **kwargs)
             if request:
@@ -324,16 +329,15 @@ class URLPath(MPTTModel):
         This interface is internal because it's rather sloppy
         """
         user = None
-        organization = None
         ip_address = None
         if not request.user.is_anonymous:
             user = request.user
-            organization = request.organization
             if settings.LOG_IPS_USERS:
                 ip_address = request.META.get('REMOTE_ADDR', None)
         elif settings.LOG_IPS_ANONYMOUS:
             ip_address = request.META.get('REMOTE_ADDR', None)
 
+        org = request.organization if not request.user.is_anonymous() else None
         return cls.create_urlpath(
             parent_urlpath,
             slug,
@@ -348,7 +352,7 @@ class URLPath(MPTTModel):
                             'group_write': perm_article.group_write,
                             'other_read': perm_article.other_read,
                             'other_write': perm_article.other_write,
-                            'organization': organization}
+                            'organization': org}
         )
 
     @classmethod

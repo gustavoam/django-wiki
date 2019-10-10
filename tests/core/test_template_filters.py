@@ -1,10 +1,7 @@
-from __future__ import absolute_import, unicode_literals
-
 from django.contrib.auth import get_user_model
 from wiki.models import Article, ArticleRevision
-from wiki.templatetags.wiki_tags import (can_delete, can_moderate, can_read,
-                                         can_write, get_content_snippet,
-                                         is_locked)
+from wiki.templatetags.wiki_tags import can_delete, can_moderate, can_read, can_write, get_content_snippet, is_locked
+
 from ..base import TemplateTestCase, wiki_override_settings
 
 User = get_user_model()
@@ -22,7 +19,7 @@ class GetContentSnippet(TemplateTestCase):
         content = text + ' list'
         expected = (
             'lorem lorem lorem lorem lorem lorem lorem lorem lorem '
-            'lorem lorem lorem lorem lorem lorem <strong>list</strong> '
+            'lorem lorem lorem lorem lorem lorem <strong>list</strong>'
         )
 
         output = get_content_snippet(content, 'list')
@@ -33,7 +30,7 @@ class GetContentSnippet(TemplateTestCase):
         text = 'lorem ' * 80
         content = 'list ' + text
         expected = (
-            ' <strong>list</strong> lorem lorem lorem lorem lorem '
+            '<strong>list</strong> lorem lorem lorem lorem lorem '
             'lorem lorem lorem lorem lorem lorem lorem lorem lorem lorem lorem '
             'lorem lorem lorem lorem lorem lorem lorem lorem lorem lorem lorem '
             'lorem lorem lorem'
@@ -43,18 +40,9 @@ class GetContentSnippet(TemplateTestCase):
 
         self.assertEqual(output, expected)
 
-    def test_whole_content_is_consist_from_keywords(self):
+    def test_whole_content_consists_of_keywords(self):
         content = 'lorem ' * 80
-        expected = (
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-            '<strong>lorem</strong> <strong>lorem</strong> '
-        )
+        expected = '<strong>lorem</strong>' + 30 * ' <strong>lorem</strong>'
 
         output = get_content_snippet(content, 'lorem')
 
@@ -82,11 +70,7 @@ class GetContentSnippet(TemplateTestCase):
         text = 'dolorum ' * 80
         content += text + ' list'
 
-        expected = (
-            'dolorum dolorum dolorum dolorum dolorum dolorum dolorum '
-            'dolorum dolorum dolorum dolorum dolorum dolorum dolorum dolorum '
-            '<strong>list</strong> '
-        )
+        expected = '<strong>list</strong>' + 30 * ' lorem'
 
         output = get_content_snippet(content, 'list')
 
@@ -98,7 +82,7 @@ class GetContentSnippet(TemplateTestCase):
         content = text + ' list'
 
         output = get_content_snippet(content, 'list', 0)
-        expected = 'spam ' * 800 + '<strong>list</strong> '
+        expected = 'spam ' * 800 + '<strong>list</strong>'
 
         self.assertEqual(output, expected)
 
@@ -108,7 +92,7 @@ class GetContentSnippet(TemplateTestCase):
         content = text + ' list'
 
         output = get_content_snippet(content, 'list', -10)
-        expected = 'spam ' * 75 + '<strong>list</strong> '
+        expected = 'spam ' * 75 + '<strong>list</strong>'
 
         self.assertEqual(output, expected)
 
@@ -148,8 +132,7 @@ class GetContentSnippet(TemplateTestCase):
         keyword = 'maybe'
 
         content = """
-        <h1>Some dummy</h1> text. <div>Actually</div> I don't what to write,
-        heh. Don't now, <b>maybe</b> I should citate Shakespeare or Byron.
+        I should citate Shakespeare or Byron.
         Or <a>maybe</a> copy paste from <a href="http://python.org">python</a>
         or django documentation. Maybe.
         """
@@ -157,7 +140,7 @@ class GetContentSnippet(TemplateTestCase):
         expected = (
             'I should citate Shakespeare or Byron. '
             'Or <strong>maybe</strong> copy paste from python '
-            'or django documentation. <strong>maybe</strong> .'
+            'or django documentation. <strong>Maybe.</strong>'
         )
 
         output = get_content_snippet(content, keyword, 30)
@@ -171,8 +154,8 @@ class GetContentSnippet(TemplateTestCase):
         content = """
         knight eggs spam ham eggs guido python eggs circus
         """
-        expected = ('<strong>eggs</strong> guido python '
-                    '<strong>eggs</strong> circus')
+        expected = ('knight <strong>eggs</strong> spam ham '
+                    '<strong>eggs</strong> guido')
 
         output = get_content_snippet(content, keyword, 5)
 
@@ -182,9 +165,17 @@ class GetContentSnippet(TemplateTestCase):
 
         expected = (
             'knight <strong>eggs</strong> spam ham '
-            '<strong>eggs</strong> guido python <strong>eggs</strong> '
+            '<strong>eggs</strong> guido python <strong>eggs</strong>'
         )
         self.assertEqual(output, expected)
+
+    def test_content_case_preserved(self):
+        keyword = 'DOlOr'
+        match = 'DoLoR'
+        content = 'lorem ipsum %s sit amet' % match
+        output = get_content_snippet(content, keyword)
+        self.assertIn(match, output)
+        self.assertNotIn(keyword, output)
 
 
 class CanRead(TemplateTestCase):
@@ -202,7 +193,7 @@ class CanRead(TemplateTestCase):
         u = User.objects.create(username='Nobody', password='pass')
 
         output = can_read(a, u)
-        self.assertTrue(output)
+        self.assertIs(output, True)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('True', output)
@@ -214,7 +205,7 @@ class CanRead(TemplateTestCase):
         u = User.objects.create(username='Noman', password='pass')
 
         output = can_read(a, u)
-        self.assertFalse(output)
+        self.assertIs(output, False)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('False', output)
@@ -235,7 +226,7 @@ class CanWrite(TemplateTestCase):
         u = User.objects.create(username='Nobody', password='pass')
 
         output = can_write(a, u)
-        self.assertTrue(output)
+        self.assertIs(output, True)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('True', output)
@@ -247,7 +238,7 @@ class CanWrite(TemplateTestCase):
         u = User.objects.create(username='Noman', password='pass')
 
         output = can_write(a, u)
-        self.assertFalse(output)
+        self.assertIs(output, False)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('False', output)
@@ -268,7 +259,7 @@ class CanDelete(TemplateTestCase):
         u = User.objects.create(username='Nobody', password='pass')
 
         output = can_delete(a, u)
-        self.assertTrue(output)
+        self.assertIs(output, True)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('True', output)
@@ -280,7 +271,7 @@ class CanDelete(TemplateTestCase):
         u = User.objects.create(username='Noman', password='pass')
 
         output = can_delete(a, u)
-        self.assertFalse(output)
+        self.assertIs(output, False)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('False', output)
@@ -301,7 +292,7 @@ class CanModerate(TemplateTestCase):
         u = User.objects.create(username='Nobody', password='pass')
 
         output = can_moderate(a, u)
-        self.assertTrue(output)
+        self.assertIs(output, True)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('True', output)
@@ -312,7 +303,7 @@ class CanModerate(TemplateTestCase):
         u = User.objects.create(username='Noman', password='pass')
 
         output = can_moderate(a, u)
-        self.assertFalse(output)
+        self.assertIs(output, False)
 
         output = self.render({'article': a, 'user': u})
         self.assertIn('False', output)
@@ -330,7 +321,7 @@ class IsLocked(TemplateTestCase):
         a = Article.objects.create()
 
         output = is_locked(a)
-        self.assertFalse(output)
+        self.assertIsNone(output)
 
         output = self.render({'article': a})
         self.assertIn('None', output)
@@ -344,10 +335,10 @@ class IsLocked(TemplateTestCase):
         ArticleRevision.objects.create(article=b)
 
         output = is_locked(a)
-        self.assertFalse(output)
+        self.assertIs(output, False)
 
         output = is_locked(b)
-        self.assertFalse(output)
+        self.assertIs(output, False)
 
         output = self.render({'article': a})
         self.assertIn('False', output)
@@ -358,7 +349,7 @@ class IsLocked(TemplateTestCase):
         ArticleRevision.objects.create(article=a, locked=True)
 
         output = is_locked(a)
-        self.assertTrue(output)
+        self.assertIs(output, True)
 
         output = self.render({'article': a})
         self.assertIn('True', output)

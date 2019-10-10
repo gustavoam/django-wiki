@@ -1,17 +1,15 @@
-from __future__ import absolute_import, print_function, unicode_literals
-
 import pprint
 
-from django.contrib.auth import authenticate
+from django.http import JsonResponse
 from django.shortcuts import resolve_url
+from django.utils import translation
 from django.utils.html import escape
 from django_functest import FuncBaseMixin
 from wiki import models
 from wiki.forms import validate_slug_numbers
-from wiki.models import URLPath
+from wiki.models import ArticleRevision, URLPath, reverse
 
-from ..base import (ArticleWebTestUtils, DjangoClientTestBase,
-                    RequireRootArticleMixin, SeleniumBase, WebTestBase)
+from ..base import ArticleWebTestUtils, DjangoClientTestBase, RequireRootArticleMixin, SeleniumBase, WebTestBase
 
 
 class RootArticleViewTestsBase(FuncBaseMixin):
@@ -29,7 +27,7 @@ class RootArticleViewTestsBase(FuncBaseMixin):
             '#id_content': 'test heading h1\n====\n',
             '#id_title': 'Wiki Test',
         })
-        self.submit('input[name="save_changes"]')
+        self.submit('button[name="save_changes"]')
         self.assertUrlsEqual('/')
         self.assertTextPresent('test heading h1')
         article = URLPath.root().article
@@ -272,11 +270,11 @@ class MoveViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTes
 
         response = self.get_by_path('test0/test2/')
         self.assertContains(response, 'Moved: Test1')
-        self.assertContains(response, 'moved to <a>wiki:/test1new/')
+        self.assertRegex(response.rendered_content, r'moved to <a[^>]*>wiki:/test1new/')
 
         response = self.get_by_path('test0/test2/test020/')
         self.assertContains(response, 'Moved: Test020')
-        self.assertContains(response, 'moved to <a>wiki:/test1new/test020')
+        self.assertRegex(response.rendered_content, r'moved to <a[^>]*>wiki:/test1new/test020')
 
         # Check that moved_to was correctly set
         urlsrc = URLPath.get_by_path('/test0/test2/')
@@ -287,6 +285,23 @@ class MoveViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTes
         urlsrc = URLPath.get_by_path('/test0/test2/test020/')
         urldst = URLPath.get_by_path('/test1new/test020/')
         self.assertEqual(urlsrc.moved_to, urldst)
+
+    def test_translation(self):
+        # Test that translation of "Be careful, links to this article" exists.
+        self.client.post(
+            resolve_url('wiki:create', path=''),
+            {'title': 'Test', 'slug': 'test0', 'content': 'Content'}
+        )
+        url = resolve_url('wiki:move', path='test0/')
+        response_en = self.client.get(url)
+        self.assertIn('Move article', response_en.rendered_content)
+        self.assertIn('Be careful', response_en.rendered_content)
+
+        with translation.override('da-DK'):
+            response_da = self.client.get(url)
+
+            self.assertNotIn('Move article', response_da.rendered_content)
+            self.assertNotIn('Be careful', response_da.rendered_content)
 
 
 class DeleteViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestBase):
@@ -351,6 +366,24 @@ class EditViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTes
 
         self.assertContains(response, 'The modified text')
 
+    def test_preview_xframe_options_sameorigin(self):
+        """Ensure that preview response has X-Frame-Options: SAMEORIGIN"""
+
+        example_data = {
+            'content': 'The modified text',
+            'current_revision': str(URLPath.root().article.current_revision.id),
+            'preview': '1',
+            'summary': 'why edited',
+            'title': 'wiki test'
+        }
+
+        response = self.client.post(
+            resolve_url('wiki:preview', path=''),
+            example_data
+        )
+
+        self.assertEquals(response.get('X-Frame-Options'), 'SAMEORIGIN')
+
     def test_revision_conflict(self):
         """
         Test the warning if the same article is being edited concurrently.
@@ -381,6 +414,26 @@ class EditViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTes
             response,
             'While you were editing, someone else changed the revision.'
         )
+
+
+class DiffViewTests(RequireRootArticleMixin, DjangoClientTestBase):
+
+    def setUp(self):
+        super().setUp()
+        self.root_article.add_revision(ArticleRevision(
+            title='New Revision'), save=True
+        )
+        self.new_revision = self.root_article.current_revision
+
+    def test_diff(self):
+        response = self.client.get(reverse('wiki:diff', kwargs={'revision_id': self.root_article.pk}))
+        diff = {
+            "diff": ["+ root article content"],
+            "other_changes": [["New title", "Root Article"]]
+        }
+        self.assertJSONEqual(str(response.content, encoding='utf8'), diff)
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 200)
 
 
 class EditViewTestsBase(RequireRootArticleMixin, FuncBaseMixin):
@@ -432,6 +485,42 @@ class SearchViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientT
         response = self.client.get(resolve_url('wiki:search'), {'q': ''})
         self.assertFalse(response.context['articles'])
 
+    def test_hierarchy_search(self):
+
+        c = self.client
+
+        c.post(
+            resolve_url('wiki:create', path=''),
+            {'title': 'Test0', 'slug': 'test0', 'content': 'Content test0'}
+        )
+        c.post(
+            resolve_url('wiki:create', path=''),
+            {'title': 'Test1', 'slug': 'test1', 'content': 'Content test1'}
+        )
+        c.post(
+            resolve_url('wiki:create', path='test0/'),
+            {'title': 'Subtest0', 'slug': 'subtest0', 'content': 'Content test2'}
+        )
+
+        response = c.get(resolve_url('wiki:search', path='test0/'), {'q': 'Content test'})
+        articles = response.context['articles']
+
+        def contains_title(articles, title):
+            return any(article.current_revision.title == title for article in articles)
+
+        self.assertIs(contains_title(articles, 'Test0'), True)
+        self.assertIs(contains_title(articles, 'Test1'), False)
+        self.assertIs(contains_title(articles, 'Subtest0'), True)
+
+    def test_hierarchy_search_404(self):
+
+        c = self.client
+
+        response = c.get(resolve_url(
+            'wiki:search', path='test0/'), {'q': 'Content test'})
+
+        self.assertEqual(response.status_code, 404)
+
 
 class DeletedListViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestBase):
 
@@ -459,21 +548,6 @@ class DeletedListViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoCl
 
         response = self.client.get(resolve_url('wiki:deleted_list'))
         self.assertContains(response, 'Delete Me')
-
-
-class UpdateProfileViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestBase):
-
-    def test_update_profile(self):
-        self.client.post(
-            resolve_url('wiki:profile_update'),
-            {"email": "test@test.com", "password1": "newPass", "password2": "newPass"},
-            follow=True
-        )
-
-        test_auth = authenticate(username='admin', password='newPass')
-
-        self.assertNotEqual(test_auth, None)
-        self.assertEqual(test_auth.email, 'test@test.com')
 
 
 class MergeViewTest(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestBase):

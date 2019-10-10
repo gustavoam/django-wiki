@@ -1,11 +1,9 @@
-from __future__ import absolute_import, unicode_literals
-
 import re
 
 import markdown
 from django.contrib.auth.models import AnonymousUser
-from django.urls import reverse
 from django.template.loader import render_to_string
+from django.urls import reverse
 from wiki.core.permissions import can_read
 from wiki.plugins.attachments import models
 
@@ -18,7 +16,7 @@ class AttachmentExtension(markdown.Extension):
 
     """ Abbreviation Extension for Python-Markdown. """
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md):
         """ Insert AbbrPreprocessor before ReferencePreprocessor. """
         md.preprocessors.add(
             'dw-attachments',
@@ -82,7 +80,7 @@ class AttachmentPreprocessor(markdown.preprocessors.Preprocessor):
                         'attachment_can_read': attachment_can_read,
                     }
                 )
-                line = self.markdown.htmlStash.store(html, safe=True)
+                line = self.markdown.htmlStash.store(html)
             except models.Attachment.DoesNotExist:
                 html = (
                     """<span class="attachment attachment-deleted">Attachment with ID """
@@ -90,7 +88,7 @@ class AttachmentPreprocessor(markdown.preprocessors.Preprocessor):
                 ).format(attachment_id)
                 line = line.replace(
                     '[' + m.group(2) + ']',
-                    self.markdown.htmlStash.store(html, safe=True)
+                    self.markdown.htmlStash.store(html)
                 )
             new_text.append(before + line + after)
         return new_text

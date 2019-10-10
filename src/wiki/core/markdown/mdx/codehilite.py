@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import logging
 import re
 
@@ -44,7 +42,7 @@ class WikiFencedBlockPreprocessor(Preprocessor):
     CODE_WRAP = '<pre>%s</pre>'
 
     def __init__(self, md):
-        super(WikiFencedBlockPreprocessor, self).__init__(md)
+        super().__init__(md)
 
         self.checked_for_codehilite = False
         self.codehilite_conf = {}
@@ -60,7 +58,7 @@ class WikiFencedBlockPreprocessor(Preprocessor):
                 if m.group('lang'):
                     lang = m.group('lang')
                 html = highlight(m.group('code'), self.config, self.markdown.tab_length, lang=lang)
-                placeholder = self.markdown.htmlStash.store(html, safe=True)
+                placeholder = self.markdown.htmlStash.store(html)
                 text = '%s\n%s\n%s' % (text[:m.start()],
                                        placeholder,
                                        text[m.end():])
@@ -78,7 +76,7 @@ class HiliteTreeprocessor(Treeprocessor):
         for block in blocks:
             if len(block) == 1 and block[0].tag == 'code':
                 html = highlight(block[0].text, self.config, self.markdown.tab_length)
-                placeholder = self.markdown.htmlStash.store(html, safe=True)
+                placeholder = self.markdown.htmlStash.store(html)
                 # Clear codeblock in etree instance
                 block.clear()
                 # Change to p element which will later
@@ -94,7 +92,7 @@ class WikiCodeHiliteExtension(CodeHiliteExtension):
     because it's hard to extend...
     """
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md):
         """ Add HilitePostprocessor to Markdown instance. """
         hiliter = HiliteTreeprocessor(md)
         hiliter.config = self.getConfigs()
@@ -119,3 +117,8 @@ class WikiCodeHiliteExtension(CodeHiliteExtension):
                              ">normalize_whitespace")
 
         md.registerExtension(self)
+
+
+def makeExtension(*args, **kwargs):
+    """Return an instance of the extension."""
+    return WikiCodeHiliteExtension(*args, **kwargs)

@@ -1,5 +1,4 @@
-# Because Python 3.6 is available on GCE
-dist: trusty
+cache: pip
 
 language: python
 cache: pip
@@ -32,6 +31,39 @@ matrix:
   - python: "3.6"
     env: DJANGO="1.10"
 
+matrix:
+  include:
+  - python: 3.5
+    dist: xenial
+    sudo: false
+    env: DJANGO="2.1"
+  - python: 3.5
+    dist: xenial
+    sudo: false
+    env: DJANGO="2.2"
+
+  - python: 3.6
+    dist: xenial
+    sudo: false
+    env: DJANGO="2.1"
+  - python: 3.6
+    dist: xenial
+    sudo: false
+    env: DJANGO="2.2"
+  - python: 3.6
+    dist: xenial
+    sudo: false
+    env: DJANGO="3.0"
+
+  - python: 3.7
+    dist: xenial
+    sudo: true
+    env: DJANGO="2.2"
+  - python: 3.7
+    dist: xenial
+    sudo: true
+    env: DJANGO="3.0"
+
 addons:
   apt:
     packages:
@@ -39,9 +71,10 @@ addons:
       - libjpeg8-dev
 
 install:
-  - pip install tox\>=2.1 tox-travis codecov
+  - pip install tox tox-travis codecov
 
 script:
+  - python3 -c "import sqlite3;print(sqlite3.sqlite_version)"
   - tox
 
 notifications:

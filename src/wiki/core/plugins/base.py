@@ -1,7 +1,5 @@
-from __future__ import absolute_import, unicode_literals
-
 from django import forms
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 
 """Base classes for different plugin objects.
@@ -15,7 +13,7 @@ plugin's models.
 """
 
 
-class BasePlugin(object):
+class BasePlugin:
 
     """Plugins should inherit from this"""
     # Must fill in!
@@ -61,7 +59,7 @@ class PluginSidebarFormMixin(forms.ModelForm):
         pass
 
 
-class PluginSettingsFormMixin(object):
+class PluginSettingsFormMixin:
     settings_form_headline = _('Settings for plugin')
     settings_order = 1
     settings_write_access = False

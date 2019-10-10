@@ -1,14 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, unicode_literals
-
 import os
 
 from django.conf import settings as django_settings
 from django.db import models
 from django.db.models import signals
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import ugettext
+from django.utils.translation import gettext, gettext_lazy as _
 from wiki import managers
 from wiki.decorators import disable_signal_for_loaddata
 from wiki.models.article import BaseRevisionMixin
@@ -23,7 +18,6 @@ class IllegalFileExtension(Exception):
     pass
 
 
-@python_2_unicode_compatible
 class Attachment(ReusablePlugin):
 
     objects = managers.ArticleFkManager()
@@ -31,10 +25,9 @@ class Attachment(ReusablePlugin):
     current_revision = models.OneToOneField(
         'AttachmentRevision', verbose_name=_('current revision'),
         blank=True, null=True, related_name='current_set',
-        help_text=_(
-            'The revision of this attachment currently in use (on all articles using the attachment)'),
         on_delete=models.CASCADE,
-    )
+        help_text=_(
+            'The revision of this attachment currently in use (on all articles using the attachment)'),)
 
     original_filename = models.CharField(
         max_length=256,
@@ -71,12 +64,12 @@ def extension_allowed(filename):
     except IndexError:
         # No extension
         raise IllegalFileExtension(
-            ugettext("No file extension found in filename. That's not okay!"))
+            gettext("No file extension found in filename. That's not okay!"))
     if not extension.lower() in map(
             lambda x: x.lower(),
             settings.FILE_EXTENSIONS):
         raise IllegalFileExtension(
-            ugettext(
+            gettext(
                 "The following filename is illegal: {filename:s}. Extension "
                 "has to be one of {extensions:s}"
             ).format(
@@ -93,8 +86,7 @@ def upload_path(instance, filename):
 
     # Has to match original extension filename
     if instance.id and instance.attachment and instance.attachment.original_filename:
-        original_extension = instance.attachment.original_filename.split(
-            ".")[-1]
+        original_extension = instance.attachment.original_filename.split(".")[-1]
         if not extension.lower() == original_extension:
             raise IllegalFileExtension(
                 "File extension has to be '%s', not '%s'." %
@@ -118,7 +110,6 @@ def upload_path(instance, filename):
     return os.path.join(upload_path, filename)
 
 
-@python_2_unicode_compatible
 class AttachmentRevision(BaseRevisionMixin, models.Model):
 
     attachment = models.ForeignKey('Attachment', on_delete=models.CASCADE)
@@ -181,11 +172,7 @@ def on_revision_delete(instance, *args, **kwargs):
     for depth in range(0, max_depth):
         delete_path = "/".join(path[:-depth] if depth > 0 else path)
         try:
-            if len(
-                os.listdir(
-                    os.path.join(
-                        django_settings.MEDIA_ROOT,
-                        delete_path))) == 0:
+            if len(os.listdir(os.path.join(django_settings.MEDIA_ROOT, delete_path))) == 0:
                 os.rmdir(delete_path)
         except OSError:
             # Raised by os.listdir if directory is missing

@@ -1,7 +1,4 @@
-from __future__ import absolute_import, unicode_literals
-
 from wiki.conf import settings
-
 
 ###############################
 # ARTICLE PERMISSION HANDLING #

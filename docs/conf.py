@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, unicode_literals
-
 import inspect
 import os
 import sys
 
-from django.utils.html import strip_tags
+import bleach
+
 from django.utils.encoding import force_text
 
 from datetime import datetime
@@ -68,7 +66,7 @@ def process_docstring(app, what, name, obj, options, lines):
                 continue
 
             # Decode and strip any html out of the field's help text
-            help_text = strip_tags(force_text(field.help_text))
+            help_text = bleach.clean(force_text(field.help_text))
 
             # Decode and capitalize the verbose name, for use if there isn't
             # any help text
@@ -93,6 +91,11 @@ def process_docstring(app, what, name, obj, options, lines):
     return lines
 
 
+extlinks = {
+    'url-issue': ('https://github.com/django-wiki/django-wiki/issues/%s', '#'),
+}
+
+
 def setup(app):
     # Register the docstring processor with sphinx
     app.connect('autodoc-process-docstring', process_docstring)
@@ -100,7 +103,12 @@ def setup(app):
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.extlinks',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

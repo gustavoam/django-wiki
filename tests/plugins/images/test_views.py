@@ -1,23 +1,22 @@
-from __future__ import print_function, unicode_literals
-
 import base64
+import os
 from io import BytesIO
 
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.urls import reverse
+from PIL import Image
 from wiki.core.plugins import registry as plugin_registry
 from wiki.models import URLPath
 from wiki.plugins.images import models
 from wiki.plugins.images.wiki_plugin import ImagePlugin
 
-from ...base import (ArticleWebTestUtils, DjangoClientTestBase,
-                     RequireRootArticleMixin)
+from ...base import ArticleWebTestUtils, DjangoClientTestBase, RequireRootArticleMixin, wiki_override_settings
 
 
 class ImageTests(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestBase):
 
     def setUp(self):
-        super(ImageTests, self).setUp()
+        super().setUp()
         self.article = self.root_article
         # A black 1x1 gif
         self.test_data = "R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs="
@@ -52,7 +51,7 @@ class ImageTests(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestB
             if isinstance(plugin_instance, ImagePlugin):
                 plugin_index = cnt
                 break
-        self.assertTrue(plugin_index >= 0, "Image plugin not activated")
+        self.assertGreaterEqual(plugin_index, 0, msg="Image plugin not activated")
         base_edit_url = reverse('wiki:edit', kwargs={'path': path})
         url = base_edit_url + '?f=form{0:d}'.format(plugin_index)
         filestream = self._create_gif_filestream_from_base64(self.test_data)
@@ -140,3 +139,97 @@ class ImageTests(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestB
             '<figcaption class="caption"></figcaption></figure>'
         )
         self.assertEqual(output, expected)
+
+    # https://gist.github.com/guillaumepiot/817a70706587da3bd862835c59ef584e
+    def generate_photo_file(self):
+        file = BytesIO()
+        image = Image.new('RGBA', size=(100, 100), color=(155, 0, 0))
+        image.save(file, 'gif')
+        file.name = 'test.gif'
+        file.seek(0)
+        return file
+
+    def test_add_revision(self):
+        self._create_test_image(path='')
+        image = models.Image.objects.get()
+        before_edit_rev = image.current_revision.revision_number
+
+        response = self.client.post(
+            reverse('wiki:images_add_revision', kwargs={
+                'article_id': self.root_article, 'image_id': image.pk, 'path': '',
+            }),
+            data={'image': self.generate_photo_file()}
+        )
+        self.assertRedirects(
+            response, reverse('wiki:edit', kwargs={'path': ''})
+        )
+        image = models.Image.objects.get()
+        self.assertEqual(models.Image.objects.count(), 1)
+        self.assertEqual(image.current_revision.previous_revision.revision_number, before_edit_rev)
+
+    def test_delete_restore_revision(self):
+        self._create_test_image(path='')
+        image = models.Image.objects.get()
+        before_edit_rev = image.current_revision.revision_number
+
+        response = self.client.get(
+            reverse('wiki:images_delete', kwargs={
+                'article_id': self.root_article, 'image_id': image.pk, 'path': '',
+            }),
+        )
+        self.assertRedirects(
+            response, reverse('wiki:images_index', kwargs={'path': ''})
+        )
+        image = models.Image.objects.get()
+        self.assertEqual(models.Image.objects.count(), 1)
+        self.assertEqual(image.current_revision.previous_revision.revision_number, before_edit_rev)
+        self.assertIs(image.current_revision.deleted, True)
+
+        # RESTORE
+        before_edit_rev = image.current_revision.revision_number
+        response = self.client.get(
+            reverse('wiki:images_restore', kwargs={
+                'article_id': self.root_article, 'image_id': image.pk, 'path': '',
+            }),
+        )
+        self.assertRedirects(
+            response, reverse('wiki:images_index', kwargs={'path': ''})
+        )
+        image = models.Image.objects.get()
+        self.assertEqual(models.Image.objects.count(), 1)
+        self.assertEqual(image.current_revision.previous_revision.revision_number, before_edit_rev)
+        self.assertFalse(image.current_revision.deleted)
+
+    def test_purge(self):
+        """
+        Tests that an image is really purged
+        """
+        self._create_test_image(path='')
+        image = models.Image.objects.get()
+        image_revision = image.current_revision.imagerevision
+        f_path = image_revision.image.file.name
+
+        self.assertIs(os.path.exists(f_path), True)
+
+        response = self.client.post(
+            reverse('wiki:images_purge', kwargs={
+                'article_id': self.root_article, 'image_id': image.pk, 'path': '',
+            }),
+            data={'confirm': True}
+        )
+        self.assertRedirects(
+            response, reverse('wiki:images_index', kwargs={'path': ''})
+        )
+        self.assertEqual(models.Image.objects.count(), 0)
+        self.assertIs(os.path.exists(f_path), False)
+
+    @wiki_override_settings(ACCOUNT_HANDLING=True)
+    def test_login_on_revision_add(self):
+        self._create_test_image(path='')
+        self.client.logout()
+        image = models.Image.objects.get()
+        url = reverse('wiki:images_add_revision', kwargs={
+            'article_id': self.root_article, 'image_id': image.pk, 'path': '',
+        })
+        response = self.client.post(url, data={'image': self.generate_photo_file()})
+        self.assertRedirects(response, '{}?next={}'.format(reverse('wiki:login'), url))

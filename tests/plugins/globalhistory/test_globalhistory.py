@@ -1,10 +1,8 @@
-from __future__ import print_function, unicode_literals
-
 from django.urls import reverse
+from django.utils import translation
 from wiki.models import URLPath
 
-from ...base import (ArticleWebTestUtils, DjangoClientTestBase,
-                     RequireRootArticleMixin)
+from ...base import ArticleWebTestUtils, DjangoClientTestBase, RequireRootArticleMixin
 
 
 class GlobalhistoryTests(RequireRootArticleMixin, ArticleWebTestUtils, DjangoClientTestBase):
@@ -80,3 +78,16 @@ class GlobalhistoryTests(RequireRootArticleMixin, ArticleWebTestUtils, DjangoCli
         )
         response = self.client.get(url1)
         self.assertRegexpMatches(response.rendered_content, expected)
+
+    def test_translation(self):
+        # Test that translation of "List of %s changes in the wiki." exists.
+        url = reverse('wiki:globalhistory')
+        response_en = self.client.get(url)
+        self.assertIn('Global history', response_en.rendered_content)
+        self.assertIn('in the wiki', response_en.rendered_content)
+
+        with translation.override('da-DK'):
+            response_da = self.client.get(url)
+
+            self.assertNotIn('Global history', response_da.rendered_content)
+            self.assertNotIn('in the wiki', response_da.rendered_content)

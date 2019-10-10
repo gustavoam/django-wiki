@@ -1,19 +1,15 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
-
 from functools import wraps
 
-from django.urls import reverse
-from django.http import (HttpResponseForbidden, HttpResponseNotFound,
-                         HttpResponseRedirect)
+from django.http import HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils.http import urlquote
 from wiki.conf import settings
 from wiki.core.exceptions import NoRootURL
 
 
-def response_forbidden(request, article, urlpath):
+def response_forbidden(request, article, urlpath, read_denied=False):
     if request.user.is_anonymous:
         qs = request.META.get('QUERY_STRING', '')
         if qs:
@@ -25,14 +21,18 @@ def response_forbidden(request, article, urlpath):
         return HttpResponseForbidden(
             render_to_string(
                 "wiki/permission_denied.html",
-                context={'article': article, 'urlpath': urlpath},
+                context={
+                    'article': article,
+                    'urlpath': urlpath,
+                    'read_denied': read_denied
+                },
                 request=request
             )
         )
 
 
 # TODO: This decorator is too complex (C901)
-def get_article(func=None, can_read=True, can_write=False,  # noqa
+def get_article(func=None, can_read=True, can_write=False,  # noqa: max-complexity=13
                 deleted_contents=False, not_locked=False,
                 can_delete=False, can_moderate=False,
                 can_create=False):
@@ -112,10 +112,7 @@ def get_article(func=None, can_read=True, can_write=False,  # noqa
             else:
                 # Be robust: Somehow article is gone but urlpath exists...
                 # clean up
-                return_url = reverse(
-                    'wiki:get',
-                    kwargs={
-                        'path': urlpath.parent.path})
+                return_url = reverse('wiki:get', kwargs={'path': urlpath.parent.path})
                 urlpath.delete()
                 return HttpResponseRedirect(return_url)
 
@@ -151,7 +148,7 @@ def get_article(func=None, can_read=True, can_write=False,  # noqa
             return response_forbidden(request, article, urlpath)
 
         if can_read and not article.can_read(request.user):
-            return response_forbidden(request, article, urlpath)
+            return response_forbidden(request, article, urlpath, read_denied=True)
 
         if (can_write or can_create) and not article.can_write(request.user):
             return response_forbidden(request, article, urlpath)

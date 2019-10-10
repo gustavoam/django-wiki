@@ -1,16 +1,12 @@
-from __future__ import absolute_import, unicode_literals
-
 from django.apps import apps
-from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.test.testcases import TestCase
-
+from wiki.compat import url
 from wiki.conf import settings
 from wiki.managers import ArticleManager
 from wiki.models import Article, ArticleRevision, URLPath
 from wiki.urls import WikiURLPatterns
-
 
 User = get_user_model()
 Group = apps.get_model(settings.GROUP_MODEL)
@@ -42,17 +38,17 @@ class ArticleModelTest(TestCase):
 
         a = Article.objects.create()
 
-        self.assertFalse(a.current_revision)
-        self.assertFalse(a.owner)
-        self.assertFalse(a.group)
+        self.assertIsNone(a.current_revision)
+        self.assertIsNone(a.owner)
+        self.assertIsNone(a.group)
 
-        self.assertTrue(a.created)
-        self.assertTrue(a.modified)
+        self.assertIsNotNone(a.created)
+        self.assertIsNotNone(a.modified)
 
-        self.assertTrue(a.group_read)
-        self.assertTrue(a.group_write)
-        self.assertTrue(a.other_read)
-        self.assertTrue(a.other_write)
+        self.assertIsNotNone(a.group_read)
+        self.assertIsNotNone(a.group_write)
+        self.assertIsNotNone(a.other_read)
+        self.assertIsNotNone(a.other_write)
 
     # XXX maybe redundant test
     def test_model_manager_class(self):
@@ -138,5 +134,4 @@ class ArticleModelTest(TestCase):
         ArticleRevision.objects.create(
             article=a, title="test", content="# header"
         )
-        self.assertEqual(a.get_cached_content(), """<h1 id="wiki-toc-header">header</h1>""")
         self.assertEqual(a.get_cached_content(), """<h1 id="wiki-toc-header">header</h1>""")
