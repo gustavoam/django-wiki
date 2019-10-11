@@ -327,7 +327,7 @@ class URLPath(MPTTModel):
         elif settings.LOG_IPS_ANONYMOUS:
             ip_address = request.META.get('REMOTE_ADDR', None)
 
-        org = request.organization if not request.user.is_anonymous() else None
+        org = request.organization if not request.user.is_anonymous else None
         return cls.create_urlpath(
             parent_urlpath,
             slug,
