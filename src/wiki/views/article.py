@@ -969,9 +969,9 @@ class CreateRootView(FormView):
     def dispatch(self, request, *args, **kwargs):
         org = request.organization
         if (
-            not request.user.is_org_manager
-            or not org.wiki_admins.filter(id=request.user.id).exists()
-            or not request.user.is_superuser
+            not request.user.is_org_manager(org)
+            and not org.wiki_admins.filter(id=request.user.id).exists()
+            and not request.user.is_superuser
         ):
             return redirect("wiki:root_missing")
 
