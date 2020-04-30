@@ -1,6 +1,7 @@
 from django.conf import settings as django_settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.search import SearchVectorField
 from django.core.cache import cache
 from django.db import models
 from django.db.models.fields import GenericIPAddressField as IPAddressField
@@ -72,6 +73,8 @@ class Article(models.Model):
     organization = models.ForeignKey(
         'grinch.Organization', related_name='articles',
         null=True, blank=True, on_delete=models.CASCADE)
+
+    search_vector = SearchVectorField(null=True)
 
     # PERMISSIONS
     def can_read(self, user):
