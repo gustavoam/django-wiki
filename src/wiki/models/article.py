@@ -1,9 +1,10 @@
 from django.conf import settings as django_settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.core.cache import cache
-from django.db import models
+from django.db import models, transaction
+from django.db.models import OuterRef, Subquery
 from django.db.models.fields import GenericIPAddressField as IPAddressField
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.urls import reverse
@@ -101,6 +102,23 @@ class Article(models.Model):
         """NB! This generator is expensive, so use it with care!!"""
         for obj in self.articleforobject_set.filter(is_mptt=True):
             yield from obj.content_object.get_descendants()
+
+    @transaction.atomic
+    def update_search_vector(self):
+        Article.objects.annotate(
+            wiki_title=Subquery(
+                Article.objects.filter(id=OuterRef('id')).values(
+                    'current_revision__title'
+                )
+            ),
+            wiki_body=Subquery(
+                Article.objects.filter(id=OuterRef('id')).values(
+                    'current_revision__content'
+                )
+            ),
+        ).filter(id=self.id).update(
+            search_vector=SearchVector('wiki_title', 'wiki_body')
+        )
 
     def get_children(self, max_num=None, user_can_read=None, **kwargs):
         """NB! This generator is expensive, so use it with care!!"""
