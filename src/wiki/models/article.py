@@ -117,7 +117,8 @@ class Article(models.Model):
                 )
             ),
         ).filter(id=self.id).update(
-            search_vector=SearchVector('wiki_title', 'wiki_body')
+            search_vector=SearchVector('wiki_title', weight='A')
+            + SearchVector('wiki_body', weight='B')
         )
 
     def get_children(self, max_num=None, user_can_read=None, **kwargs):
