@@ -77,6 +77,11 @@ class Article(models.Model):
 
     search_vector = SearchVectorField(null=True)
 
+    inherited_from = models.ForeignKey(
+        'self', related_name='inherit_children',
+        null=True, blank=True, on_delete=models.SET_NULL,
+    )
+
     # PERMISSIONS
     def can_read(self, user):
         return permissions.can_read(self, user)
