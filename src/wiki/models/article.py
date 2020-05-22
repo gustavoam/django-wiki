@@ -1,7 +1,6 @@
 from django.conf import settings as django_settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.core.cache import cache
 from django.db import models, transaction
 from django.db.models import OuterRef, Subquery
@@ -75,8 +74,6 @@ class Article(models.Model):
         'grinch.Organization', related_name='articles',
         null=True, blank=True, on_delete=models.CASCADE)
 
-    search_vector = SearchVectorField(null=True)
-
     inherited_from = models.ForeignKey(
         'self', related_name='inherit_children',
         null=True, blank=True, on_delete=models.SET_NULL,
@@ -107,24 +104,6 @@ class Article(models.Model):
         """NB! This generator is expensive, so use it with care!!"""
         for obj in self.articleforobject_set.filter(is_mptt=True):
             yield from obj.content_object.get_descendants()
-
-    @transaction.atomic
-    def update_search_vector(self):
-        Article.objects.annotate(
-            wiki_title=Subquery(
-                Article.objects.filter(id=OuterRef('id')).values(
-                    'current_revision__title'
-                )
-            ),
-            wiki_body=Subquery(
-                Article.objects.filter(id=OuterRef('id')).values(
-                    'current_revision__content'
-                )
-            ),
-        ).filter(id=self.id).update(
-            search_vector=SearchVector('wiki_title', weight='A')
-            + SearchVector('wiki_body', weight='B')
-        )
 
     def get_children(self, max_num=None, user_can_read=None, **kwargs):
         """NB! This generator is expensive, so use it with care!!"""

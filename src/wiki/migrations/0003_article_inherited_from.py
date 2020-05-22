@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('wiki', '0003_article_search_vector'),
+        ('wiki', '0002_auto_20191213_0603'),
     ]
 
     operations = [
