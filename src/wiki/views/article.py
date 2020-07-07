@@ -979,10 +979,14 @@ class CreateRootView(FormView):
     template_name = "wiki/create_root.html"
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
+        org = request.organization
+        if (
+            not request.user.is_org_manager
+            or not org.wiki_admins.filter(id=request.user.id).exists()
+            or not request.user.is_superuser
+        ):
             return redirect("wiki:root_missing")
 
-        org = request.organization
         try:
             root = models.URLPath.root(org)
             if request.method == "GET" and root.article.organization != org:
